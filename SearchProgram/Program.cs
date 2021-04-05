@@ -14,7 +14,7 @@ namespace SearchProgram
 
         static void Main(string[] args)
         {
-            string searchValue = "girl";
+            string searchValue = "jenny";
 
             SearchAsync(searchValue);
         }
@@ -31,11 +31,12 @@ namespace SearchProgram
                 foreach (var file in fileArray)
                     fileCount++;
 
-                Console.WriteLine("Loading " + fileCount + " files...");
+                Console.WriteLine("Loaded " + fileCount + " files...");
 
                 foreach (string file in fileArray)
                 {
-                    lineArray = await ReadAllLinesAsync(file, searchValue);
+                    Console.WriteLine("Currently Searching " + Path.GetFileName(file) + "...");
+                    lineArray = await ReadAllLinesAsync(file, searchValue, Path.GetFileName(file));
                 }
 
                 Console.WriteLine("Results: " + lineArray.Length);
@@ -50,12 +51,12 @@ namespace SearchProgram
             }
         }
 
-        public static Task<string[]> ReadAllLinesAsync(string path, string searchValue)
+        public static Task<string[]> ReadAllLinesAsync(string path, string searchValue, string fileName)
         {
-            return ReadAllLinesAsync(path, Encoding.UTF8, searchValue);
+            return ReadAllLinesAsync(path, Encoding.UTF8, searchValue, fileName);
         }
 
-        public static async Task<string[]> ReadAllLinesAsync(string path, Encoding encoding, string searchValue)
+        public static async Task<string[]> ReadAllLinesAsync(string path, Encoding encoding, string searchValue, string fileName)
         {
             var lines = new List<string>();
 
@@ -65,7 +66,7 @@ namespace SearchProgram
                 string line;
                 while ((line = await reader.ReadLineAsync()) != null)
                 {
-                    string newLine = Search(line, searchValue);
+                    string newLine = Search(line, searchValue, fileName);
 
                     if (String.IsNullOrEmpty(newLine))
                     {
@@ -77,11 +78,11 @@ namespace SearchProgram
             return lines.ToArray();
         }
 
-        public static string Search(string line, string searchValue)
+        public static string Search(string line, string searchValue, string fileName)
         {
             if (line.Contains(searchValue))
             {
-                Console.WriteLine(line);
+                Console.WriteLine("   " + fileName + " -- " + line);
                 return line;
             }
             else
