@@ -1,19 +1,23 @@
 ﻿using System;
 using System.Collections;
+using System.Collections.Generic;
 using System.IO;
+using System.Text;
 using System.Threading.Tasks;
 
 namespace SearchProgram
 {
     class Program
     {
+        private const int DefaultBufferSize = 4096;
+        private const FileOptions DefaultOptions = FileOptions.Asynchronous | FileOptions.SequentialScan;
+
         static void Main(string[] args)
         {
             string searchValue = "@gmail.com";
 
             SearchAsync(searchValue);
         }
-
         public static async void SearchAsync(string searchValue)
         {
             try
@@ -26,7 +30,7 @@ namespace SearchProgram
                 {
                     await Task.Run(() =>
                     {
-                        SearchProcess(file, searchValue);
+                        ReadAllLinesAsync(file, searchValue);
                     });
                 }
 
@@ -38,18 +42,38 @@ namespace SearchProgram
             }
         }
 
-        public static void SearchProcess(string file, string searchValue)
+        public static Task<string[]> ReadAllLinesAsync(string path, string searchValue)
         {
-            Console.WriteLine(" Searching: " + file);
-            using StreamReader sr = new(file);
-            while (!sr.EndOfStream)
+            return ReadAllLinesAsync(path, Encoding.UTF8, searchValue);
+        }
+
+        public static async Task<string[]> ReadAllLinesAsync(string path, Encoding encoding, string searchValue)
+        {
+            var lines = new List<string>();
+
+            // Open the FileStream with the same FileMode, FileAccess
+            // and FileShare as a call to File.OpenText would've done.
+            using (var stream = new FileStream(path, FileMode.Open, FileAccess.Read, FileShare.Read, DefaultBufferSize, DefaultOptions))
+            using (var reader = new StreamReader(stream, encoding))
             {
-                var line = sr.ReadLine();
+                string line;
+                while ((line = await reader.ReadLineAsync()) != null)
+                {
+                    Search(line, searchValue);
+
+                    lines.Add(line);
+                }
+            }
+
+            return lines.ToArray();
+        }
+
+        public static void Search(string line, string searchValue)
+        {
                 if (line.Contains(searchValue))
                 {
                     Console.WriteLine("  " + line);
                 }
-            }
         }
     }
 }
