@@ -12,7 +12,6 @@ namespace SearchProgram
             string searchValue = "@gmail.com";
 
             SearchAsync(searchValue);
-
         }
 
         public static async void SearchAsync(string searchValue)
@@ -23,7 +22,6 @@ namespace SearchProgram
 
                 IEnumerable fileArray = Directory.EnumerateFiles(@"E:\", "*.txt", SearchOption.AllDirectories);
 
-
                 foreach (string file in fileArray)
                 {
                     await Task.Run(() =>
@@ -33,7 +31,6 @@ namespace SearchProgram
                 }
 
                 Task.WaitAll();
-
             }
             catch (Exception e)
             {
