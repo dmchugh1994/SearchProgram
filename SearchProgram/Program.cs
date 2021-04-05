@@ -14,19 +14,19 @@ namespace SearchProgram
 
         static void Main(string[] args)
         {
-            string searchValue = "@gmail.com";
+            string searchValue = "girl";
 
             SearchAsync(searchValue);
         }
         public static async void SearchAsync(string searchValue)
         {
-            int fileCount = 0;
-
             try
             {
-                Console.WriteLine("Loading all files...");
+                int fileCount = 0;
+                string[] lineArray = Array.Empty<string>();
 
-                IEnumerable fileArray = Directory.EnumerateFiles(@"E:\Cit0day Premium\", "*.txt", SearchOption.AllDirectories);
+                Console.WriteLine("Loading all files...");
+                IEnumerable fileArray = Directory.EnumerateFiles(@"E:\", "*.txt", SearchOption.AllDirectories);
 
                 foreach (var file in fileArray)
                     fileCount++;
@@ -35,10 +35,14 @@ namespace SearchProgram
 
                 foreach (string file in fileArray)
                 {
-                    var output = await ReadAllLinesAsync(file, searchValue);
-
-                    Console.WriteLine(output);
+                    lineArray = await ReadAllLinesAsync(file, searchValue);
                 }
+
+                Console.WriteLine("Results: " + lineArray.Length);
+                //foreach (string line in lineArray)
+                //{
+                //    Console.WriteLine(line);
+                //}
             }
             catch (Exception e)
             {
@@ -67,7 +71,6 @@ namespace SearchProgram
                     {
                         lines.Add(newLine);
                     }
-
                 }
             }
 
