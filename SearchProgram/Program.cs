@@ -30,11 +30,9 @@ namespace SearchProgram
                 {
                     await Task.Run(() =>
                     {
-                        var matches = ReadAllLinesAsync(file, searchValue);
+                        ReadAllLinesAsync(file, searchValue);
                     });
                 }
-
-                Task.WaitAll();
             }
             catch (Exception e)
             {
