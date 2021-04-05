@@ -30,7 +30,7 @@ namespace SearchProgram
                 {
                     await Task.Run(() =>
                     {
-                        ReadAllLinesAsync(file, searchValue);
+                        var matches = ReadAllLinesAsync(file, searchValue);
                     });
                 }
 
@@ -51,8 +51,6 @@ namespace SearchProgram
         {
             var lines = new List<string>();
 
-            // Open the FileStream with the same FileMode, FileAccess
-            // and FileShare as a call to File.OpenText would've done.
             using (var stream = new FileStream(path, FileMode.Open, FileAccess.Read, FileShare.Read, DefaultBufferSize, DefaultOptions))
             using (var reader = new StreamReader(stream, encoding))
             {
