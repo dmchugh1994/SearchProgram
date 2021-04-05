@@ -19,22 +19,20 @@ namespace SearchProgram
         {
             try
             {
-                Console.WriteLine("Loading all Databases...");
+                Console.WriteLine("Loading all files...");
 
                 IEnumerable fileArray = Directory.EnumerateFiles(@"E:\", "*.txt", SearchOption.AllDirectories);
 
-                using (StreamWriter SW = new StreamWriter("C:/temp/testing.txt"))
-                {
-                    foreach (string file in fileArray)
-                    {
-                        await Task.Run(() =>
-                        {
-                            SearchProcess(file, searchValue);
-                        });
-                    }
 
-                    Task.WaitAll();
+                foreach (string file in fileArray)
+                {
+                    await Task.Run(() =>
+                    {
+                        SearchProcess(file, searchValue);
+                    });
                 }
+
+                Task.WaitAll();
 
             }
             catch (Exception e)
