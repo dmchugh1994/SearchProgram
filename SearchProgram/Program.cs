@@ -20,18 +20,24 @@ namespace SearchProgram
         }
         public static async void SearchAsync(string searchValue)
         {
+            int fileCount = 0;
+
             try
             {
                 Console.WriteLine("Loading all files...");
 
-                IEnumerable fileArray = Directory.EnumerateFiles(@"E:\", "*.txt", SearchOption.AllDirectories);
+                IEnumerable fileArray = Directory.EnumerateFiles(@"E:\Cit0day Premium\", "*.txt", SearchOption.AllDirectories);
+
+                foreach (var file in fileArray)
+                    fileCount++;
+
+                Console.WriteLine("Loading " + fileCount + " files...");
 
                 foreach (string file in fileArray)
                 {
-                    await Task.Run(() =>
-                    {
-                        ReadAllLinesAsync(file, searchValue);
-                    });
+                    var output = await ReadAllLinesAsync(file, searchValue);
+
+                    Console.WriteLine(output);
                 }
             }
             catch (Exception e)
@@ -55,21 +61,28 @@ namespace SearchProgram
                 string line;
                 while ((line = await reader.ReadLineAsync()) != null)
                 {
-                    Search(line, searchValue);
+                    string newLine = Search(line, searchValue);
 
-                    lines.Add(line);
+                    if (String.IsNullOrEmpty(newLine))
+                    {
+                        lines.Add(newLine);
+                    }
+
                 }
             }
 
             return lines.ToArray();
         }
 
-        public static void Search(string line, string searchValue)
+        public static string Search(string line, string searchValue)
         {
-                if (line.Contains(searchValue))
-                {
-                    Console.WriteLine("  " + line);
-                }
+            if (line.Contains(searchValue))
+            {
+                Console.WriteLine(line);
+                return line;
+            }
+            else
+                return String.Empty;
         }
     }
 }
