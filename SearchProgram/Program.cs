@@ -14,7 +14,7 @@ namespace SearchProgram
 
         static void Main(string[] args)
         {
-            string searchValue = "jenny";
+            string searchValue = "testing";
 
             SearchAsync(searchValue);
         }
