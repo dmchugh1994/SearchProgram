@@ -30,8 +30,6 @@ namespace SearchProgram
 
         static async Task Main(string[] args)
         {
-            string searchValue = "aerison.com";
-
             ThreadPool.GetMinThreads(out minWorker, out minIOC);
             ThreadPool.SetMinThreads(400, minIOC);
             ThreadPool.GetMaxThreads(out maxWorker, out maxIOC);
@@ -48,9 +46,6 @@ namespace SearchProgram
 
                 var lines = new List<string>();
 
-                var engine = new FileHelperAsyncEngine<Result>();
-                engine.HeaderText = "Origin,Result";
-
                 Console.Write("Enter database location (Default: '" + defaultDatabaseLocation + "'): ");
                 var tempDatabaseLocationInput = Console.ReadLine();
                 if (String.IsNullOrEmpty(tempDatabaseLocationInput))
@@ -66,11 +61,11 @@ namespace SearchProgram
                 var tempSearchValueInput = Console.ReadLine();
                 if (String.IsNullOrEmpty(tempSearchValueInput))
                 {
-                    searchValue = defaultSearchValue;
+                    SearchValue = defaultSearchValue;
                 }
                 else
                 {
-                    searchValue = tempSearchValueInput;
+                    SearchValue = tempSearchValueInput;
                 }
 
                 Console.WriteLine("");
@@ -84,43 +79,32 @@ namespace SearchProgram
 
                 Console.WriteLine("Loaded " + fileCount + " files...");
 
-                using (engine.BeginWriteFile(outputFile))
+                using StreamWriter writer = new(outputFile, append: true);
+                
+                await fileArray.ParallelForEachAsync(400, async file =>
                 {
-                    await fileArray.ParallelForEachAsync(400, async file =>
+                    Interlocked.Add(ref currentlyScanned, 1);
+
+                    Console.WriteLine(currentlyScanned.ToString("000000.##") + "/" + fileCount + "(" + currentResults + ")  ||  Currently Searching " + Path.GetFileName(file) + "...");
+
+                    var matchingLines = await ReadAllLinesAsync(file, searchValue, Path.GetFileName(file));
+
+                    foreach (var line in matchingLines)
                     {
-                        Interlocked.Add(ref currentlyScanned, 1);
+                        await writer.WriteLineAsync(line);
+                    }
 
-                        Console.WriteLine(currentlyScanned.ToString("000000.##") + "/" + fileCount + "(" + currentResults + ")  ||  Currently Searching " + Path.GetFileName(file) + "...");
-
-                        var matchingLines = await ReadAllLinesAsync(file, searchValue, Path.GetFileName(file));
-
-                        await listSync.WaitAsync();
-                        try
-                        {
-                            lines.AddRange(matchingLines);
-
-                            foreach (var line in matchingLines)
-                            {
-                                engine.WriteNext(new Result() { result = line });
-                            }
-                        }
-                        finally
-                        {
-                            listSync.Release();
-                        }
-                    });
-                }
-
-                var results = new List<Result>();
-
-                foreach (var line in lines)
-                {
-                    results.Add(new Result()
+                    await listSync.WaitAsync();
+                    try
                     {
-                        result = line
-                    }); ;
-                }
-
+                        lines.AddRange(matchingLines);
+                    }
+                    finally
+                    {
+                        listSync.Release();
+                    }
+                });
+                
                 Console.WriteLine("");
                 Console.WriteLine("Results: " + lines.Count);
                 Console.WriteLine("");
@@ -130,6 +114,10 @@ namespace SearchProgram
             {
                 Console.WriteLine(e.Message);
             }
+
+            Console.WriteLine("");
+            Console.WriteLine("Press Enter to close program...");
+            Console.ReadLine();
         }
 
         public static Task<List<string>> ReadAllLinesAsync(string path, string searchValue, string fileName)
@@ -174,11 +162,5 @@ namespace SearchProgram
             else
                 return String.Empty;
         }
-    }
-
-    [DelimitedRecord(",")]
-    public class Result
-    {
-        public string result;
     }
 }
