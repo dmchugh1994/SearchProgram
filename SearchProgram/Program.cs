@@ -68,7 +68,7 @@ namespace SearchProgram
                 {
                     string newLine = Search(line, searchValue, fileName);
 
-                    if (String.IsNullOrEmpty(newLine))
+                    if (!String.IsNullOrEmpty(newLine))
                     {
                         lines.Add(newLine);
                     }
