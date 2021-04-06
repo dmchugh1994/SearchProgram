@@ -4,6 +4,7 @@ using System.IO;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
+using FileHelpers;
 
 namespace SearchProgram
 {
@@ -11,15 +12,27 @@ namespace SearchProgram
     {
         private const int DefaultBufferSize = 4096;
         private const FileOptions DefaultOptions = FileOptions.Asynchronous | FileOptions.SequentialScan;
-        private const string fmt = "000000.##";
 
         private static readonly SemaphoreSlim listSync = new(1, 1);
 
         private static int currentResults = 0;
+        private static string searchValue = "gmail.com";
+        private static string databaseLocation = "E:/";
+        private static int minWorker, minIOC, maxWorker, maxIOC;
+
+        private static string outputFile = "C:/temp/Output" + DateTime.Now.ToString("yyyyMMdd'T'HHmmss") + ".csv";
+
+        public static string DatabaseLocation { get => databaseLocation; set => databaseLocation = value; }
+        public static string SearchValue { get => searchValue; set => searchValue = value; }
 
         static async Task Main(string[] args)
         {
-            string searchValue = "@gmail.com";
+            string searchValue = "aerison.com";
+
+            ThreadPool.GetMinThreads(out minWorker, out minIOC);
+            ThreadPool.SetMinThreads(400, minIOC);
+            ThreadPool.GetMaxThreads(out maxWorker, out maxIOC);
+            ThreadPool.SetMaxThreads(2000, maxIOC);
 
             await SearchAsync(searchValue);
         }
@@ -32,38 +45,83 @@ namespace SearchProgram
 
                 var lines = new List<string>();
 
+                var engine = new FileHelperAsyncEngine<Result>();
+                engine.HeaderText = "Origin,Result";
+
+                Console.Write("Enter database location (Default: 'E:/'): ");
+                var tempDatabaseLocationInput = Console.ReadLine();
+                if (String.IsNullOrEmpty(tempDatabaseLocationInput))
+                {
+                    DatabaseLocation = "E:/";
+                }
+                else
+                {
+                    DatabaseLocation = tempDatabaseLocationInput;
+                }
+
+                Console.Write("Enter search value (Default: 'gmail.com'): ");
+                var tempSearchValueInput = Console.ReadLine();
+                if (String.IsNullOrEmpty(tempSearchValueInput))
+                {
+                    searchValue = "gmail.com";
+                }
+                else
+                {
+                    searchValue = tempSearchValueInput;
+                }
+
+                Console.WriteLine("");
                 Console.WriteLine("Loading all files...");
-                var fileArray = Directory.EnumerateFiles(@"E:\", "*.txt", SearchOption.AllDirectories);
+                Console.WriteLine("");
+
+                var fileArray = Directory.EnumerateFiles(@databaseLocation, "*.txt", SearchOption.AllDirectories);
 
                 foreach (var file in fileArray)
                     fileCount++;
 
                 Console.WriteLine("Loaded " + fileCount + " files...");
 
-                await fileArray.ParallelForEachAsync(1000, async file =>
+                using (engine.BeginWriteFile(outputFile))
                 {
-                    Interlocked.Add(ref currentlyScanned, 1);
 
-                    Console.WriteLine(currentlyScanned.ToString(fmt) + "/" + fileCount + "  ||  Currently Searching " + Path.GetFileName(file) + "...");
-
-                    var matchingLines = await ReadAllLinesAsync(file, searchValue, Path.GetFileName(file));
-
-                    await listSync.WaitAsync();
-                    try
+                    await fileArray.ParallelForEachAsync(400, async file =>
                     {
-                        lines.AddRange(matchingLines);
-                    }
-                    finally
-                    {
-                        listSync.Release();
-                    }
-                });
+                        Interlocked.Add(ref currentlyScanned, 1);
 
+                        Console.WriteLine(currentlyScanned.ToString("000000.##") + "/" + fileCount + "(" + currentResults + ")  ||  Currently Searching " + Path.GetFileName(file) + "...");
+
+                        var matchingLines = await ReadAllLinesAsync(file, searchValue, Path.GetFileName(file));
+
+                        await listSync.WaitAsync();
+                        try
+                        {
+                            lines.AddRange(matchingLines);
+
+                            foreach (var line in matchingLines)
+                            {
+                                engine.WriteNext(new Result() { result = line });
+                            }
+                        }
+                        finally
+                        {
+                            listSync.Release();
+                        }
+                    });
+                }
+                var results = new List<Result>();
+
+                foreach (var line in lines)
+                {
+                    results.Add(new Result()
+                    {
+                        result = line
+                    }); ;
+                }
+
+                Console.WriteLine("");
                 Console.WriteLine("Results: " + lines.Count);
-                //foreach (string line in lines)
-                //{
-                //    Console.WriteLine(line);
-                //}
+                Console.WriteLine("");
+                Console.WriteLine("Output file can be found at: " + outputFile);
             }
             catch (Exception e)
             {
@@ -90,11 +148,13 @@ namespace SearchProgram
 
                     if (!String.IsNullOrEmpty(newLine))
                     {
-                        lines.Add(newLine);
+                        newLine = newLine.Replace(",", "");
+
+                        lines.Add(fileName + "," + newLine);
 
                         Interlocked.Add(ref currentResults, 1);
 
-                        Console.WriteLine("   " + fileName + " -- " + newLine);
+                        Console.WriteLine("   Current Results " + currentResults.ToString("0000.##") + "  ||  " + fileName + " -- " + newLine);
                     }
                 }
             }
@@ -111,5 +171,11 @@ namespace SearchProgram
             else
                 return String.Empty;
         }
+    }
+
+    [DelimitedRecord(",")]
+    public class Result
+    {
+        public string result;
     }
 }
