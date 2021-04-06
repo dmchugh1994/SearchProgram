@@ -12,13 +12,13 @@ namespace SearchProgram
         private const int DefaultBufferSize = 4096;
         private const FileOptions DefaultOptions = FileOptions.Asynchronous | FileOptions.SequentialScan;
 
-        static void Main(string[] args)
+        static async Task Main(string[] args)
         {
             string searchValue = "testing";
 
-            SearchAsync(searchValue);
+            await SearchAsync(searchValue);
         }
-        public static async void SearchAsync(string searchValue)
+        public static async Task SearchAsync(string searchValue)
         {
             try
             {
