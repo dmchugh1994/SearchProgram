@@ -20,6 +20,9 @@ namespace SearchProgram
         private static string databaseLocation = "E:/";
         private static int minWorker, minIOC, maxWorker, maxIOC;
 
+        private static string defaultSearchValue = "gmail.com";
+        private static string defaultDatabaseLocation = "E:/";
+
         private static string outputFile = "C:/temp/Output" + DateTime.Now.ToString("yyyyMMdd'T'HHmmss") + ".csv";
 
         public static string DatabaseLocation { get => databaseLocation; set => databaseLocation = value; }
@@ -48,22 +51,22 @@ namespace SearchProgram
                 var engine = new FileHelperAsyncEngine<Result>();
                 engine.HeaderText = "Origin,Result";
 
-                Console.Write("Enter database location (Default: 'E:/'): ");
+                Console.Write("Enter database location (Default: '" + defaultDatabaseLocation + "'): ");
                 var tempDatabaseLocationInput = Console.ReadLine();
                 if (String.IsNullOrEmpty(tempDatabaseLocationInput))
                 {
-                    DatabaseLocation = "E:/";
+                    DatabaseLocation = defaultDatabaseLocation;
                 }
                 else
                 {
                     DatabaseLocation = tempDatabaseLocationInput;
                 }
 
-                Console.Write("Enter search value (Default: 'gmail.com'): ");
+                Console.Write("Enter search value (Default: '" + defaultSearchValue + "'): ");
                 var tempSearchValueInput = Console.ReadLine();
                 if (String.IsNullOrEmpty(tempSearchValueInput))
                 {
-                    searchValue = "gmail.com";
+                    searchValue = defaultSearchValue;
                 }
                 else
                 {
@@ -83,7 +86,6 @@ namespace SearchProgram
 
                 using (engine.BeginWriteFile(outputFile))
                 {
-
                     await fileArray.ParallelForEachAsync(400, async file =>
                     {
                         Interlocked.Add(ref currentlyScanned, 1);
@@ -108,6 +110,7 @@ namespace SearchProgram
                         }
                     });
                 }
+
                 var results = new List<Result>();
 
                 foreach (var line in lines)
