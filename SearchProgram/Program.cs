@@ -1,8 +1,8 @@
 ﻿using System;
-using System.Collections;
 using System.Collections.Generic;
 using System.IO;
 using System.Text;
+using System.Threading;
 using System.Threading.Tasks;
 
 namespace SearchProgram
@@ -11,6 +11,8 @@ namespace SearchProgram
     {
         private const int DefaultBufferSize = 4096;
         private const FileOptions DefaultOptions = FileOptions.Asynchronous | FileOptions.SequentialScan;
+
+        private static readonly SemaphoreSlim listSync = new(1, 1);
 
         static async Task Main(string[] args)
         {
@@ -36,7 +38,18 @@ namespace SearchProgram
                 await fileArray.ParallelForEachAsync(100, async file =>
                 {
                     Console.WriteLine("Currently Searching " + Path.GetFileName(file) + "...");
-                    lines.AddRange(await ReadAllLinesAsync(file, searchValue, Path.GetFileName(file)));
+
+                    var matchingLines = await ReadAllLinesAsync(file, searchValue, Path.GetFileName(file));
+
+                    await listSync.WaitAsync();
+                    try
+                    {
+                        lines.AddRange(matchingLines);
+                    }
+                    finally
+                    {
+                        listSync.Release();
+                    }
                 });
 
                 Console.WriteLine("Results: " + lines.Count);
@@ -51,12 +64,12 @@ namespace SearchProgram
             }
         }
 
-        public static Task<string[]> ReadAllLinesAsync(string path, string searchValue, string fileName)
+        public static Task<List<string>> ReadAllLinesAsync(string path, string searchValue, string fileName)
         {
             return ReadAllLinesAsync(path, Encoding.UTF8, searchValue, fileName);
         }
 
-        public static async Task<string[]> ReadAllLinesAsync(string path, Encoding encoding, string searchValue, string fileName)
+        public static async Task<List<string>> ReadAllLinesAsync(string path, Encoding encoding, string searchValue, string fileName)
         {
             var lines = new List<string>();
 
@@ -75,7 +88,7 @@ namespace SearchProgram
                 }
             }
 
-            return lines.ToArray();
+            return lines;
         }
 
         public static string Search(string line, string searchValue, string fileName)
