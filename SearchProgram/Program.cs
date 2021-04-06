@@ -4,7 +4,6 @@ using System.IO;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
-using FileHelpers;
 
 namespace SearchProgram
 {
@@ -16,8 +15,8 @@ namespace SearchProgram
         private static readonly SemaphoreSlim listSync = new(1, 1);
 
         private static int currentResults = 0;
-        private static string searchValue = "gmail.com";
-        private static string databaseLocation = "E:/";
+        private static string searchValue;
+        private static string databaseLocation;
         private static int minWorker, minIOC, maxWorker, maxIOC;
 
         private static string defaultSearchValue = "gmail.com";
