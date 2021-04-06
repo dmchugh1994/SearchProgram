@@ -11,12 +11,13 @@ namespace SearchProgram
     {
         private const int DefaultBufferSize = 4096;
         private const FileOptions DefaultOptions = FileOptions.Asynchronous | FileOptions.SequentialScan;
+        private const string fmt = "000000.##";
 
         private static readonly SemaphoreSlim listSync = new(1, 1);
 
         static async Task Main(string[] args)
         {
-            string searchValue = "testing";
+            string searchValue = "@gmail.com";
 
             await SearchAsync(searchValue);
         }
@@ -25,6 +26,9 @@ namespace SearchProgram
             try
             {
                 int fileCount = 0;
+                int currentlyScanned = 0;
+                int currentResults = 0;
+
                 var lines = new List<string>();
 
                 Console.WriteLine("Loading all files...");
@@ -35,9 +39,11 @@ namespace SearchProgram
 
                 Console.WriteLine("Loaded " + fileCount + " files...");
 
-                await fileArray.ParallelForEachAsync(100, async file =>
+                await fileArray.ParallelForEachAsync(1000, async file =>
                 {
-                    Console.WriteLine("Currently Searching " + Path.GetFileName(file) + "...");
+                    currentlyScanned++;
+
+                    Console.WriteLine(currentlyScanned.ToString(fmt) + "/" + fileCount + "  ||  Currently Searching " + Path.GetFileName(file) + "...");
 
                     var matchingLines = await ReadAllLinesAsync(file, searchValue, Path.GetFileName(file));
 
@@ -84,6 +90,8 @@ namespace SearchProgram
                     if (!String.IsNullOrEmpty(newLine))
                     {
                         lines.Add(newLine);
+
+                        Console.WriteLine("   " + fileName + " -- " + newLine);
                     }
                 }
             }
@@ -95,7 +103,6 @@ namespace SearchProgram
         {
             if (line.Contains(searchValue))
             {
-                Console.WriteLine("   " + fileName + " -- " + line);
                 return line;
             }
             else
