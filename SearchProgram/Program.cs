@@ -15,6 +15,8 @@ namespace SearchProgram
 
         private static readonly SemaphoreSlim listSync = new(1, 1);
 
+        private static int currentResults = 0;
+
         static async Task Main(string[] args)
         {
             string searchValue = "@gmail.com";
@@ -27,7 +29,6 @@ namespace SearchProgram
             {
                 int fileCount = 0;
                 int currentlyScanned = 0;
-                int currentResults = 0;
 
                 var lines = new List<string>();
 
@@ -41,7 +42,7 @@ namespace SearchProgram
 
                 await fileArray.ParallelForEachAsync(1000, async file =>
                 {
-                    currentlyScanned++;
+                    Interlocked.Add(ref currentlyScanned, 1);
 
                     Console.WriteLine(currentlyScanned.ToString(fmt) + "/" + fileCount + "  ||  Currently Searching " + Path.GetFileName(file) + "...");
 
@@ -90,6 +91,8 @@ namespace SearchProgram
                     if (!String.IsNullOrEmpty(newLine))
                     {
                         lines.Add(newLine);
+
+                        Interlocked.Add(ref currentResults, 1);
 
                         Console.WriteLine("   " + fileName + " -- " + newLine);
                     }
