@@ -23,24 +23,24 @@ namespace SearchProgram
             try
             {
                 int fileCount = 0;
-                string[] lineArray = Array.Empty<string>();
+                var lines = new List<string>();
 
                 Console.WriteLine("Loading all files...");
-                IEnumerable fileArray = Directory.EnumerateFiles(@"E:\", "*.txt", SearchOption.AllDirectories);
+                var fileArray = Directory.EnumerateFiles(@"E:\", "*.txt", SearchOption.AllDirectories);
 
                 foreach (var file in fileArray)
                     fileCount++;
 
                 Console.WriteLine("Loaded " + fileCount + " files...");
 
-                foreach (string file in fileArray)
+                await fileArray.ParallelForEachAsync(100, async file =>
                 {
                     Console.WriteLine("Currently Searching " + Path.GetFileName(file) + "...");
-                    lineArray = await ReadAllLinesAsync(file, searchValue, Path.GetFileName(file));
-                }
+                    lines.AddRange(await ReadAllLinesAsync(file, searchValue, Path.GetFileName(file)));
+                });
 
-                Console.WriteLine("Results: " + lineArray.Length);
-                //foreach (string line in lineArray)
+                Console.WriteLine("Results: " + lines.Count);
+                //foreach (string line in lines)
                 //{
                 //    Console.WriteLine(line);
                 //}
