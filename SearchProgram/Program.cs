@@ -85,14 +85,14 @@ namespace SearchProgram
 
                         var matchingLines = await ReadAllLinesAsync(file, searchValue, Path.GetFileName(file));
 
-                        foreach (var line in matchingLines)
-                        {
-                            await writer.WriteLineAsync(line);
-                        }
-
                         await listSync.WaitAsync();
                         try
                         {
+                            foreach (var line in matchingLines)
+                            {
+                                await writer.WriteLineAsync(line);
+                            }
+
                             lines.AddRange(matchingLines);
                         }
                         finally
