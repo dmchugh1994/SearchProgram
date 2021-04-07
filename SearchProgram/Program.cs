@@ -109,7 +109,8 @@ namespace SearchProgram
             }
             catch (Exception e)
             {
-                Console.WriteLine(e.Message);
+                Console.WriteLine($"Unhandled exception in SearchAsync(). {e.Message}");
+                Console.WriteLine(e.StackTrace);
             }
 
             Console.WriteLine("");
