@@ -24,9 +24,6 @@ namespace SearchProgram
 
         private static string outputFile = "C:/temp/Output" + DateTime.Now.ToString("yyyyMMdd'T'HHmmss") + ".csv";
 
-        public static string DatabaseLocation { get => databaseLocation; set => databaseLocation = value; }
-        public static string SearchValue { get => searchValue; set => searchValue = value; }
-
         static async Task Main(string[] args)
         {
             ThreadPool.GetMinThreads(out minWorker, out minIOC);
@@ -34,9 +31,9 @@ namespace SearchProgram
             ThreadPool.GetMaxThreads(out maxWorker, out maxIOC);
             ThreadPool.SetMaxThreads(2000, maxIOC);
 
-            await SearchAsync(searchValue);
+            await SearchAsync();
         }
-        public static async Task SearchAsync(string searchValue)
+        public static async Task SearchAsync()
         {
             try
             {
@@ -45,26 +42,26 @@ namespace SearchProgram
 
                 var lines = new List<string>();
 
-                Console.Write("Enter database location (Default: '" + defaultDatabaseLocation + "'): ");
+                Console.Write($"Enter database location (Default: '{defaultDatabaseLocation}'): ");
                 var tempDatabaseLocationInput = Console.ReadLine();
                 if (String.IsNullOrEmpty(tempDatabaseLocationInput))
                 {
-                    DatabaseLocation = defaultDatabaseLocation;
+                    databaseLocation = defaultDatabaseLocation;
                 }
                 else
                 {
-                    DatabaseLocation = tempDatabaseLocationInput;
+                    databaseLocation = tempDatabaseLocationInput;
                 }
 
                 Console.Write("Enter search value (Default: '" + defaultSearchValue + "'): ");
                 var tempSearchValueInput = Console.ReadLine();
                 if (String.IsNullOrEmpty(tempSearchValueInput))
                 {
-                    SearchValue = defaultSearchValue;
+                    searchValue = defaultSearchValue;
                 }
                 else
                 {
-                    SearchValue = tempSearchValueInput;
+                    searchValue = tempSearchValueInput;
                 }
 
                 Console.WriteLine("");
@@ -78,31 +75,32 @@ namespace SearchProgram
 
                 Console.WriteLine("Loaded " + fileCount + " files...");
 
-                using StreamWriter writer = new(outputFile, append: true);
-                
-                await fileArray.ParallelForEachAsync(400, async file =>
+                using (StreamWriter writer = new(outputFile, append: true))
                 {
-                    Interlocked.Add(ref currentlyScanned, 1);
-
-                    Console.WriteLine(currentlyScanned.ToString("000000.##") + "/" + fileCount + "(" + currentResults + ")  ||  Currently Searching " + Path.GetFileName(file) + "...");
-
-                    var matchingLines = await ReadAllLinesAsync(file, searchValue, Path.GetFileName(file));
-
-                    foreach (var line in matchingLines)
+                    await fileArray.ParallelForEachAsync(400, async file =>
                     {
-                        await writer.WriteLineAsync(line);
-                    }
+                        Interlocked.Add(ref currentlyScanned, 1);
 
-                    await listSync.WaitAsync();
-                    try
-                    {
-                        lines.AddRange(matchingLines);
-                    }
-                    finally
-                    {
-                        listSync.Release();
-                    }
-                });
+                        Console.WriteLine($"{currentlyScanned.ToString("000000.##")}/{fileCount}({currentResults})  ||  Currently Searching {Path.GetFileName(file)}...");
+
+                        var matchingLines = await ReadAllLinesAsync(file, searchValue, Path.GetFileName(file));
+
+                        foreach (var line in matchingLines)
+                        {
+                            await writer.WriteLineAsync(line);
+                        }
+
+                        await listSync.WaitAsync();
+                        try
+                        {
+                            lines.AddRange(matchingLines);
+                        }
+                        finally
+                        {
+                            listSync.Release();
+                        }
+                    });
+                }
                 
                 Console.WriteLine("");
                 Console.WriteLine("Results: " + lines.Count);
